@@ -1,2 +1,5 @@
 node_modules
 .env
+# ignore output_audios folder and its content
+output_audios/*
+output_texts/*
