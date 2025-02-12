@@ -4,6 +4,16 @@ const fs = require('fs');
 const path = require('path');
 const sanitizeFilename = require('sanitize-filename');
 
+// Add cookie handling
+let cookies = '';
+try {
+    if (fs.existsSync('./youtube-cookies.txt')) {
+        cookies = fs.readFileSync('./youtube-cookies.txt', 'utf8').trim();
+    }
+} catch (error) {
+    console.warn('No cookies file found. Some videos might be restricted.');
+}
+
 // Ensure the directory exists, if not create it
 function ensureDirectoryExistence(filePath) {
     const dirname = path.dirname(filePath);
@@ -29,15 +39,27 @@ dl_and_convert_audio = (videoUrl, settings) => {
             return reject(videoUrl + " is not valid"); 
         }
 
+        const options = {
+            requestOptions: {
+                headers: {
+                    cookie: cookies
+                }
+            }
+        };
+
         console.log(video_identifier + "Searching video information..");
-        const info = await ytdl.getInfo(videoUrl).catch(err => reject(err));
+        const info = await ytdl.getInfo(videoUrl, options).catch(err => reject(err));
 
         if (info.videoDetails) {
             const originalTitle = info.videoDetails.title;
             const filename = generateValidFilename(originalTitle, settings.convert_type);
 
             console.log(video_identifier + "Downloading video audio..");
-            const audioStream = ytdl(videoUrl, { quality: 'highestaudio', filter: 'audioonly' });
+            const audioStream = ytdl(videoUrl, { 
+                ...options,
+                quality: 'highestaudio', 
+                filter: 'audioonly' 
+            });
 
             // Ensure the directory exists
             ensureDirectoryExistence(path.join(settings.path, filename));
